@@ -1,0 +1,196 @@
+Voron 2.4 调试手册		
+	--- 疯狂豆Luke 
+
+
+一、电路检查
+上电前先确认交流电 L N GND 是否正确连接
+方法：万用蜂鸣档测试电源线连接。断电情况下测试！
+
+二、八抓鱼主板刷固件
+1. 下载文件
+地址：https://github.com/bigtreetech/BIGTREETECH-OCTOPUS-V1.0
+2. 刷固件
+    固件文件目录 ./Octopus works on Voron v2.4/Firmware/Klipper/
+    
+    确认主板 MCU 型号(429 or 446) -> firmware-FXXX-USB.bin 复制到 TF 卡　
+    ー> 重命名为 firmware.bin -> 主板断电 -> 插入 TF 卡 ->  主板通电 -> 等待 20 秒 
+    -> 主板断电取出 TF 卡 -> 查看 TF 卡文件被改为 FIRMWARE.CUR 代表成功
+
+三、树莓派刷固件
+1. 电脑安装烧录软件 
+balenaetcher
+下载地址 https://www.balena.io/etcher/
+
+2. 下载 fluiddpi 镜像文件
+地址：https://github.com/fluidd-core/FluiddPI
+镜像已经包含
+    Fluidd：操作界面
+    Klipper: 3D 打印机固件
+    Raspbian：操作系统
+
+3. 刷机 
+Fluiddpi 镜像写入 TF 卡
+    通过 balenaetcher 选择 fluiddpi 镜像安装至 TF 卡
+设置 Wifi 密码
+    打开 TF卡 fluiddpi-wpa-supplicant.txt 文件
+    启用 network 字段并填入 ssid 和 psk
+TF 卡插入树莓派，开机
+
+4. 访问 fluidd
+浏览器访问　http：//ip  
+    可以通过路由器找到 fluiddpi ip 地址
+
+四、配置打印机 printer.cfg
+1. 修改八抓鱼提供的配置模版文件 "BTT_OctoPus_Voron2_Config.cfg"
+   根据自己的设备和线路接发修改后命名 luke-printer.cfg
+   （配置引脚时查看文档 “BIGTREETECH Octopus - PIN.pdf”）
+
+    配置文件中 获取序列号方法:
+       -> 打开终端输入:sudo ssh pi@192.168.50.76  
+       -> 输入电脑账号管理员密码：自己的密码
+       -> 输入树莓派管理员密码：raspberry
+       -> 输入: ls -l /dev/serial/by-id/
+       
+3. 添加配置
+    进入 fluidd -> 配置 Configuration  -> 添加文件 Add File ->  文件名 printer.cfg -> 编辑 printer.cfg 
+    -> 粘贴 luke-printer.cfg 中的全部内容 -> 点击保存重启
+
+
+五、部件测试 
+TestCase
+
+1. 测试 屏幕显示
+    测试方法：屏幕是否点亮，旋转按钮是否正常.
+    预期：开机能打开 fluidd 屏幕就能正常工作
+    异常处理：检查连线, 检查配置 [display]、[neopixel btt_mini12864] 
+
+2. 测试 限位开关
+    测试方法：分别按下和放开 X Y Z 3个限位开关时返回值是否符合预期
+    预期：不按开关返回 OEPN , 按下开关 TRIGGERED
+    异常处理：检查连线
+    指令： QUERY_ENDSTOPS  
+
+3. 测试 调平探头传感器
+    测试方法: 金属件（用 pei）接近传感器，查看开关是否符合预期
+    预期：没有接近时返回 OEPN, 有金属接近时返回 TRIGGERED 且 PL08N 指示灯变亮
+    异常处理：检查连线,检查配置[probe] 如果 OEPN 和 TRIGGERED 反向修改配置 [probe] pin 字段
+    指令： QUERY_PROBE 
+
+4. 测试 模型冷却风扇
+    测试方法：拖动 part fan 进度条 0～100% ，查看冷却风扇速度是否变化
+    预期：模型冷却风扇速度 0～100 变化
+    异常处理：检查连线， 检查配置 [fan]
+
+5. 测试 热床和挤出头 温度
+    测试方法： 温度界面设置 
+        -> 挤出头设置 120 按回车
+        -> 热床设置 60 按回车
+        -> 到达预定稳定后点击 CANCEL_PRINT 取消关闭加热
+    预期：温度曲线逐渐上升, 可用体感或者热温枪测试温度, 
+        挤出头温度到达 50 左右挤出头风扇自动运转，温度下降后自动风扇停止
+        
+    异常处理：检查连线，检查配置 [extruder] [heater_bed] [heater_fan hotend_fan]
+
+
+6. 测试 传动电机
+    测试方法：测试 7 个传动电机是否轻微反复运动
+    指令 & 预期：
+        STEPPER_BUZZ STEPPER=stepper_x    //x 电机（左机架）转动，喷头左右移动
+        STEPPER_BUZZ STEPPER=stepper_y    //y 电机（右机架）转动，喷头前后移动
+        STEPPER_BUZZ STEPPER=stepper_z1   //z1 电机（左后方）先升再降
+        STEPPER_BUZZ STEPPER=stepper_z2   //z2 电机（右后方）先升再降
+        STEPPER_BUZZ STEPPER=stepper_z3   //z3 电机（右前方）先升再降
+        STEPPER_BUZZ STEPPER=stepper_z    //z 电机（左前方）先升再降
+        STEPPER_BUZZ STEPPER=extruder     //extruder 挤出头电机 先下再上
+     异常处理：方向相反，修改配置 [stepper xxx] dir_pin 字段    齿轮
+        
+7. 测试 X Y 归位
+    测试方法：测试龙门架 X Y 归位是否符合预期
+    预期：龙门架整体小幅度上移 -> 喷头移动到最右边 -> 碰头再移动到右后方
+    指令：G28 X Y    //打印机 X Y 归位测试 
+    注：要准备好异常随时停机，异常直接关电源！！！
+
+8. 测试 其他
+   在 fludd 中点击方向测试龙门架 X Y 运动方向是否符合预期。
+
+  
+
+六、联调 矫正
+
+1. 设置 Home 坐标  
+    方法：运行归位 指令 G28 X Y 
+        -> 点 X 方向按钮手动调整到 Z 限制位器正上方。
+        -> 调节 Z 限位器位置，喷嘴在 Z 限位器正上方对准圆心。
+        -> 控制台输入 M114 查看坐标 x,y
+        -> 将 x,y 坐标写入 printer.cfg 配置文件的 home_xy_position 字段
+        -> 保存并重启   
+        -> 重启后点击 全部（All） 按钮 开始自动测试 z 限位
+        -> 固定热床位置，距离 Z 限位器 3mm 左右，不要碰到。
+
+    指令：G28 X Y   //打印机 X Y 归位
+         M114      //查看坐标 x,y,z
+
+2. 调试 调平探头精度
+    方法：移动到热床中间 指令 G1 x125 y125
+        -> 测试探头精度 指令 PROBE_ACCURACY
+        -> 反复执行 2～3次  PROBE_ACCURACY 确认精度 (deviation) 小于 0.003
+    指令：G1 x125 y125      // 移动到热床中间
+        PROBE_ACCURACY     // 调平探头精度
+    注：需要先在铝床上放上 pei ，要准备好异常随时停机，异常直接关电源！！！
+
+3. 整体调平 
+    方法：执行指令调平 指令 QUAD_GANTRY_LEVEL 
+    指令：QUAD_GANTRY_LEVEL        //整体 调平
+
+
+4. 偏移设置
+    方法： 归位 指令 G28 
+        -> 移动到热床正中间 指令  G1 x125 y125
+        -> 热床放 1 张 A4 纸
+        -> 设置温度 热床 80, 喷嘴 200
+        -> 开启风扇
+        -> 慢慢下降 Z 轴直到挤出喷嘴与平台接近 指令 TESTZ Z=-1 (接近 1 mm时 微调 0.1)
+        -> 直到 A4 纸移动时有一些阻力
+        -> 发送指令 ACCEPT 
+        -> 发送指令 SAVE_CONFIG 自动保存重启
+    
+        指令：
+            G28     //归位
+            G1 x125 y125  // 移动到热床正中间
+            Z_ENDSTOP_CALIBRATE //Z 轴偏移矫正
+            TESTZ Z=-1 或者 TESTZ Z=-0.1   //下降 Z 轴 -1 或者 -0.1
+            ACCEPT 
+            SAVE_CONFIG //保存
+
+
+5. 热床 PID 矫正 
+    方法： 模型冷却风扇设置为 25%
+        -> 运行归位 指令 G28  
+        -> 喷嘴移至热床中心 指令 G1 x125 y125  , 高出热床 5～10mm  
+        -> 执行校准 指令 PID_CALIBRATE HEATER=heater_bed TARGET=100 
+        -> 持续几分钟后，完成后控制台返回 PID 数字
+        -> 点击保存 SAVE_CONFIG , 发送 SAVE_CONFIG 指令，自动重启
+
+    指令：
+        G28     //归位
+        G1 x125 y125    // 移动到热床正中间
+        PID_CALIBRATE HEATER=heater_bed TARGET=100    // 热床 PID 矫正
+        
+6. 挤出机 PID 矫正
+    方法： 运行归位 指令 G28  
+        -> 喷嘴移至热床中心 指令 G1 x125 y125  , 高出热床 5～10mm 
+        -> 执行校准 指令 PID_CALIBRATE HEATER=extruder TARGET=220 (高出热床 5～10mm)
+        -> 持续 5 分钟左右，完成后控制台返回 PID 数字
+        -> 点击保存 SAVE_CONFIG , 发送 SAVE_CONFIG 指令，自动重启
+
+    指令：
+        PID_CALIBRATE HEATER=extruder TARGET=220    // 挤出机 PID 矫正 
+
+
+
+七. 后期优化
+    静音阀值 stealthchop_threshold  200
+    电子设备区风扇、空气滤清风扇  [heater_fan]
+    装饰
+
+
