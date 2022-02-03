@@ -21,13 +21,3 @@
 ### 其他材料
 * 打完关机： BIQU Relay 模块 + 八抓鱼主板
 
-
-
-
-## 参考
-
-1. YouTube:  Thomas Sanladerer
-https://www.youtube.com/watch?v=EYEi2vTkzhw&list=PLDJMid0lOOYnIDwhpx7VdRdkhYRRoJeht
-
-2. B 站：云图追梦
-https://space.bilibili.com/442692825/channel/detail?cid=186487&ctype=0
