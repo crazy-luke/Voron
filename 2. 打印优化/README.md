@@ -3,6 +3,7 @@
 
 ## 视频
 * B站 优化3D打印机打印体验： https://www.bilibili.com/video/BV1Fr4y1Y754
+* B站 校准3D打印机参数： https://www.bilibili.com/video/BV1aS4y1G7U9
 
 
 ### 文件说明
