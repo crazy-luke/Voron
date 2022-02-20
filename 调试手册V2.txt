@@ -12,7 +12,7 @@ Voron 2.4 调试手册
 2. 刷固件
     固件文件目录 ./Octopus works on Voron v2.4/Firmware/Klipper/
     
-    确认主板 MCU 型号(429 or 446) -> firmware-FXXX-USB.bin 复制到 TF 卡　
+    确认主板 MCU 型号(429 or 446) -> firmware-FXXX-USB.bin 复制到 TF 卡
     ー> 重命名为 firmware.bin -> 主板断电 -> 插入 TF 卡 ->  主板通电 -> 等待 20 秒 
     -> 主板断电取出 TF 卡 -> 查看 TF 卡文件被改为 FIRMWARE.CUR 代表成功
 
@@ -189,8 +189,51 @@ TestCase
 
 
 七. 后期优化
-    静音阀值 stealthchop_threshold  200
-    电子设备区风扇、空气滤清风扇  [heater_fan]
-    装饰
+1.  静音阀值 stealthchop_threshold  200
+2.  电子设备区风扇、空气滤清风扇  [heater_fan]
+ 
+
+3. 校准热床 Bed_mesh
+    1. 设置 [bed_mesh]
+
+    2. 热床升到需要设置的温度，60 、105
+        调平        QUAD_GANTRY_LEVEL
+        Mesh校准    BED_MESH_CALIBRATE
+        保存        BED_MESH_PROFILE SAVE=temp105   
+                   SAVE_CONFIG
+
+    3. [gcode_macro PRINT_START]
+        加载 Mesh
+
+2. 校准挤出机旋转距离   [extruder] rotation_distance
+    方法：
+        原始值： 22.6789511
+        校准值 = 原始值 * 实际挤出长度 / 目标挤出长度 
+    例子
+        测试例子1： 目标挤出 10 cm， 实际挤出 10.14 cm
+        rotation_distance = 22.6789511 * 10.14/10 = 22.9964564154
+        
+        测试例子2： 目标挤出 10 cm,  实际挤出 9.8 cm  
+        rotation_distance = 22.6789511 * 9.8/10 = 22.225372078
+
+    修改 [extruder] rotation_distance ，保存重启
 
 
+3. 挤出机压力 pressure_advance
+
+    原理：
+        https://github.com/Klipper3d/klipper/blob/master/docs/Pressure_Advance.md
+
+    方法：
+       1. 切片打印测试件 square_tower.stl，要求 速度：大于100mm/s ，层高为喷嘴75％
+         例：速度 210mm/s , 层高 0.3mm（喷嘴为0.4mm)
+       2. 指令 
+            SET_VELOCITY_LIMIT SQUARE_CORNER_VELOCITY=1 ACCEL=500
+            TUNING_TOWER COMMAND=SET_PRESSURE_ADVANCE PARAMETER=ADVANCE START=0 FACTOR=.005
+            （近程挤出机 FACTOR=.005，远程挤出机 FACTOR=.020）
+       3. 测量距离 
+            pressure_advance = <start> + <measured_height> * <factor>
+            例： 0 + 18.50 * 0.005 = 0.09
+
+
+   
