@@ -1,6 +1,11 @@
 # Voron 2.4 3D 打印机
 > 小学生想要 Voron 3D 打印机，自己动手丰衣足食。
 
+
+## 三. 《2023升级》高温打印、Voron-tap、摄像头
+* 资料在文件夹  `3. 2023 升级`
+* B站视频连接
+
 ## 二. 《打印优化篇》 介绍
 * B站 优化3D打印机打印体验： https://www.bilibili.com/video/BV1Fr4y1Y754
 * B站 校准3D打印机参数： https://www.bilibili.com/video/BV1aS4y1G7U9
